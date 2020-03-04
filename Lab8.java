@@ -69,8 +69,8 @@ class Memory {
     static int capacity;
     static int remainingSize;
     static Node storage;
-    static ArrayList<Node> frees = new ArrayList<>();
-    static HashMap<Integer, Node> pees = new HashMap<>();
+    static List<Node> frees = new ArrayList<>();
+    static Map<Integer, Node> pees = new HashMap<>();
     static SortByBase baseComp = new SortByBase();
     static SortBySize sizeComp = new SortBySize();
 
@@ -92,7 +92,7 @@ class Memory {
             if (func.equals("A")) {
                 allocateFirstFit(Integer.parseInt(cmdArray[1]), Integer.parseInt(cmdArray[2]));
             } else if (func.equals("D")) {
-                System.out.println("Deallocating PID: " + cmdArray[1]);
+//                System.out.println("Deallocating PID: " + cmdArray[1]);
                 deallocate(Integer.parseInt(cmdArray[1]));
             } else {
                 printList();
@@ -116,11 +116,12 @@ class Memory {
                 } else if (free.getSize() > size) {
                     notFound = false;
                     Node proc = new Node(id, free.getBase(), size);  //start from base of free
-                    if (free.prev != null) { // if free isn't the head, swap
+//                    System.out.println(" >>>>>> " + free + " PREV: " + free.prev + " NEXT " + free.next);
+                    if (free.prev != null) { // if free isn't the head, relink
                         proc.next = free;
                         proc.prev = free.prev;
-                        proc.next.prev = proc;
                         proc.prev.next = proc;
+                        proc.next.prev = proc;
                     } else {
                         proc.next = free;
                         free.prev = proc;
@@ -144,8 +145,8 @@ class Memory {
                     proc = new Node(id, free.getBase(), size);
                     proc.next = free;
                     proc.prev = free.prev;
-                    proc.next.prev = proc;
                     proc.prev.next = proc;
+                    proc.next.prev = proc;
                     free.setBase(free.getBase() + size);
                     free.setSize(free.getSize() - size);
                 }
@@ -167,7 +168,7 @@ class Memory {
             if (func.equals("A")) {
                 allocateBestFit(Integer.parseInt(cmdArray[1]), Integer.parseInt(cmdArray[2]));
             } else if (func.equals("D")) {
-                System.out.println("Deallocating PID: " + cmdArray[1]);
+//                System.out.println("Deallocating PID: " + cmdArray[1]);
                 deallocate(Integer.parseInt(cmdArray[1]));
             } else {
                 printList();
@@ -179,10 +180,10 @@ class Memory {
     static void allocateBestFit(int id, int size) {
         if (size <= remainingSize) {
             frees.sort(sizeComp); // sort array of free blocks by asc size
-            System.out.println("SORTED BY SIZE > BASE *** " + frees);
+//            System.out.println("SORTED BY SIZE > BASE *** " + frees);
             Node free;
             int bestFit = searchForNode(size);
-            System.out.println("best fit index" + bestFit);
+//            System.out.println("best fit index" + bestFit);
             if (bestFit == -1) {
                 compaction();
                 free = frees.get(0);
@@ -194,8 +195,8 @@ class Memory {
                     proc = new Node(id, free.getBase(), size);
                     proc.next = free;
                     proc.prev = free.prev;
-                    proc.next.prev = proc;
                     proc.prev.next = proc;
+                    proc.next.prev = proc;
                     free.setBase(free.getBase() + size);
                     free.setSize(free.getSize() - size);
                 }
@@ -203,7 +204,7 @@ class Memory {
                 remainingSize -= size;
             } else {
                 free = frees.get(bestFit);
-                System.out.println("best fit = " + free);
+//                System.out.println("best fit = " + free);
                 if (free.getSize() == size) {  // if perfect fit
                     free.setPid(id);
                     frees.remove(free);
@@ -214,8 +215,8 @@ class Memory {
                     if (free.prev != null) { // if free isn't the head, swap
                         proc.next = free;
                         proc.prev = free.prev;
-                        proc.next.prev = proc;
                         proc.prev.next = proc;
+                        proc.next.prev = proc;
                     } else {
                         proc.next = free;
                         free.prev = proc;
@@ -282,8 +283,8 @@ class Memory {
                 if (free.prev != null) { // if free isn't the head, swap
                     proc.next = free;
                     proc.prev = free.prev;
-                    proc.next.prev = proc;
                     proc.prev.next = proc;
+                    proc.next.prev = proc;
                 } else {
                     proc.next = free;
                     free.prev = proc;
@@ -306,24 +307,34 @@ class Memory {
             System.out.println(cur);
             cur = cur.next;
         }
+        System.out.println("\n***Frees***");
+        for(Node block : frees) {
+            System.out.println(block + " prev >> " + block.prev);
+        }
+//        System.out.println("\n***Pees***");
+//        for(Integer key : pees.keySet()) {
+//            System.out.println(key + " : " + pees.get(key) + " PREV>> " + pees.get(key).prev + " NEXT>> " + pees.get(key).next);
+//        }
         System.out.println("==========================");
         System.out.println("Remaining capacity: " + remainingSize + "\n");
     }
 
     static void deallocate(int pid) {
-        Node p = pees.remove(pid);
-        p.setPid(-1);
-        frees.add(p);
-        remainingSize += p.getSize();
-        checkMergeFrees(p);
+        if (pees.containsKey(pid)) {
+            Node p = pees.remove(pid);
+            p.setPid(-1);
+            frees.add(p);
+            remainingSize += p.getSize();
+            checkMergeFrees(p);
+        }
     }
 
     static void checkMergeFrees(Node free) {
-        System.out.println("\nCheck if merging is needed.");
+//        System.out.println("\nCheck if merging is needed.");
         if (free.next != null && free.next.getPid() == -1) {
             int rsize = free.next.size;
             free.setSize(free.getSize() + rsize);
-            System.out.println("Merging => " + free.next + "\n");
+//            System.out.println("Merging => " + free.next + "\n");
             frees.remove(free.next);
             Node rneigh = free.next.next;
             free.next = rneigh;
@@ -334,7 +345,7 @@ class Memory {
         if (free.prev != null && free.prev.getPid() == -1) {
             Node lneigh = free.prev;
             lneigh.setSize(lneigh.getSize() + free.size);
-            System.out.println("Merging => " + free.next + "\n");
+//            System.out.println("Merging => " + free.next + "\n");
             frees.remove(free);
             lneigh.next = free.next;
             if (free.next != null) {
@@ -347,17 +358,25 @@ class Memory {
         System.out.println("\n--------------> Hold on, Compacting ... \n");
         Node cur = storage;
         int space = 0;
-        if (storage.getPid() == -1) { storage = storage.next; }
+//        if (storage.getPid() == -1) { storage = storage.next; }
         while(cur.next != null) {
             if (cur.getPid() == -1) {
+                if (cur == storage) { // if cur is free and head
+                    storage = storage.next;
+                    cur.next.prev = null;
+                } else {
+                    cur.next.prev = cur.prev;
+                    cur.prev.next = cur.next;
+                }
                 space += cur.getSize();
                 frees.remove(cur);
             } else {
                 cur.setBase(cur.getBase() - space);
-                cur.prev = null;
+//                cur.prev = null;
             }
             cur = cur.next;
         }
+        // expand last hole if exists or else make a new hole and link
         if (cur.getPid() == -1) {
             cur.setBase(cur.getBase() - space);
             cur.setSize(cur.getSize() + space);
@@ -390,11 +409,16 @@ public class Lab8 {
     }
 
     public static void main(String[] args) {
-        String filename = args[0];
-        try {
-            processFile(filename);
-        } catch (IOException e) {
-            System.out.println(e);
+        if (args.length == 1) {
+            String filename = args[0];
+            try {
+                processFile(filename);
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        } else {
+            System.out.println("Invalid number of arguments.");
         }
+
     }
 }

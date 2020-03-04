@@ -155,7 +155,7 @@ class Memory {
                 remainingSize -= size;
             }
         } else {
-            System.out.println("\nProcess PID: " + id + " doesn't fit.  Moving on.\n");
+            System.out.println("Process PID: " + id + " doesn't fit.  Moving on.\n");
         }
     }
 
@@ -228,7 +228,7 @@ class Memory {
                 }
             }
         } else {
-            System.out.println("\nProcess PID: " + id + " doesn't fit.  Moving on.\n");
+            System.out.println("Process PID: " + id + " doesn't fit.  Moving on.\n");
         }
     }
 
@@ -282,7 +282,7 @@ class Memory {
                 remainingSize -= size;
             }
         } else {
-            System.out.println("\nProcess PID: " + id + " doesn't fit.  Moving on.\n");
+            System.out.println("Process PID: " + id + " doesn't fit.  Moving on.\n");
         }
     }
 
@@ -293,10 +293,10 @@ class Memory {
             System.out.println(cur);
             cur = cur.next;
         }
-        System.out.println("\n***Frees***");
-        for(Node block : frees) {
-            System.out.println(block + " prev >> " + block.prev);
-        }
+//        System.out.println("\n***Frees***");
+//        for(Node block : frees) {
+//            System.out.println(block + " prev >> " + block.prev);
+//        }
 //        System.out.println("\n***Pees***");
 //        for(Integer key : pees.keySet()) {
 //            System.out.println(key + " : " + pees.get(key) + " PREV>> " + pees.get(key).prev + " NEXT>> " + pees.get(key).next);
@@ -342,7 +342,7 @@ class Memory {
     }
 
     static void compaction() {
-        System.out.println("\n--------------> Hold on, Compacting ... \n");
+        System.out.println("--------------> Hold on, Compacting ... \n");
         Node cur = storage;
         int space = 0;
         while(cur.next != null) {
@@ -358,7 +358,6 @@ class Memory {
                 frees.remove(cur);
             } else {
                 cur.setBase(cur.getBase() - space);
-//                cur.prev = null;
             }
             cur = cur.next;
         }

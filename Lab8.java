@@ -92,7 +92,6 @@ class Memory {
             if (func.equals("A")) {
                 allocateFirstFit(Integer.parseInt(cmdArray[1]), Integer.parseInt(cmdArray[2]));
             } else if (func.equals("D")) {
-//                System.out.println("Deallocating PID: " + cmdArray[1]);
                 deallocate(Integer.parseInt(cmdArray[1]));
             } else {
                 printList();
@@ -116,7 +115,6 @@ class Memory {
                 } else if (free.getSize() > size) {
                     notFound = false;
                     Node proc = new Node(id, free.getBase(), size);  //start from base of free
-//                    System.out.println(" >>>>>> " + free + " PREV: " + free.prev + " NEXT " + free.next);
                     if (free.prev != null) { // if free isn't the head, relink
                         proc.next = free;
                         proc.prev = free.prev;
@@ -168,7 +166,6 @@ class Memory {
             if (func.equals("A")) {
                 allocateBestFit(Integer.parseInt(cmdArray[1]), Integer.parseInt(cmdArray[2]));
             } else if (func.equals("D")) {
-//                System.out.println("Deallocating PID: " + cmdArray[1]);
                 deallocate(Integer.parseInt(cmdArray[1]));
             } else {
                 printList();
@@ -180,10 +177,8 @@ class Memory {
     static void allocateBestFit(int id, int size) {
         if (size <= remainingSize) {
             frees.sort(sizeComp); // sort array of free blocks by asc size
-//            System.out.println("SORTED BY SIZE > BASE *** " + frees);
             Node free;
             int bestFit = searchForNode(size);
-//            System.out.println("best fit index" + bestFit);
             if (bestFit == -1) {
                 compaction();
                 free = frees.get(0);
@@ -204,7 +199,6 @@ class Memory {
                 remainingSize -= size;
             } else {
                 free = frees.get(bestFit);
-//                System.out.println("best fit = " + free);
                 if (free.getSize() == size) {  // if perfect fit
                     free.setPid(id);
                     frees.remove(free);
@@ -233,7 +227,7 @@ class Memory {
         }
     }
 
-    static int searchForNode(int size) {  // search for best fit
+    static int searchForNode(int size) {  // binary search for best fit algo
         int left = 0, right = frees.size() -1, mid = 0;
         while (left < right) {
             mid = left + (right - left)/2;
@@ -256,7 +250,6 @@ class Memory {
             if (func.equals("A")) {
                 allocateWorstFit(Integer.parseInt(cmdArray[1]), Integer.parseInt(cmdArray[2]));
             } else if (func.equals("D")) {
-                System.out.println("Deallocating PID: " + cmdArray[1]);
                 deallocate(Integer.parseInt(cmdArray[1]));
             } else {
                 printList();
@@ -330,11 +323,9 @@ class Memory {
     }
 
     static void checkMergeFrees(Node free) {
-//        System.out.println("\nCheck if merging is needed.");
         if (free.next != null && free.next.getPid() == -1) {
             int rsize = free.next.size;
             free.setSize(free.getSize() + rsize);
-//            System.out.println("Merging => " + free.next + "\n");
             frees.remove(free.next);
             Node rneigh = free.next.next;
             free.next = rneigh;
@@ -345,7 +336,6 @@ class Memory {
         if (free.prev != null && free.prev.getPid() == -1) {
             Node lneigh = free.prev;
             lneigh.setSize(lneigh.getSize() + free.size);
-//            System.out.println("Merging => " + free.next + "\n");
             frees.remove(free);
             lneigh.next = free.next;
             if (free.next != null) {
@@ -358,7 +348,6 @@ class Memory {
         System.out.println("\n--------------> Hold on, Compacting ... \n");
         Node cur = storage;
         int space = 0;
-//        if (storage.getPid() == -1) { storage = storage.next; }
         while(cur.next != null) {
             if (cur.getPid() == -1) {
                 if (cur == storage) { // if cur is free and head

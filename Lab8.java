@@ -69,14 +69,13 @@ class Memory {
     static int capacity;
     static int remainingSize;
     static Node storage;
-    static List<Node> frees = new ArrayList<>();
+    static TreeSet<Node> frees;
     static Map<Integer, Node> pees = new HashMap<>();
-    static SortByBase baseComp = new SortByBase();
-    static SortBySize sizeComp = new SortBySize();
 
-    Memory (int cap) {
+    Memory (int cap, TreeSet<Node> treeset) {
         capacity = cap;
         remainingSize = cap;
+        frees = treeset;
         Node free = new Node(0, cap);  // create an empty block of free space
         frees.add(free);
         storage = free;
@@ -103,7 +102,6 @@ class Memory {
     static void allocateFirstFit(int id, int size) {
         boolean notFound = true;
         if (size <= remainingSize) {
-            frees.sort(baseComp); // sort array of free blocks by base/index
             for (Node free : frees) {
                 if (free.getSize() == size) {  // if perfect fit
                     notFound = false;
@@ -125,8 +123,10 @@ class Memory {
                         free.prev = proc;
                         storage = proc;
                     }
+                    frees.remove(free);
                     free.setBase(free.getBase() + size);
                     free.setSize(free.getSize() - size);
+                    frees.add(free);
                     pees.put(id, proc);
                     remainingSize -= size;
                     break;
@@ -134,19 +134,22 @@ class Memory {
             }
             if (notFound) {
                 compaction();
-                Node free = frees.get(0);
+                Node free = frees.first();
                 Node proc;
                 if (free.getSize() == size) {
                     free.setPid(id);
-                    proc = frees.remove(0);
+                    proc = free;
+                    frees.remove(free);
                 } else {
                     proc = new Node(id, free.getBase(), size);
                     proc.next = free;
                     proc.prev = free.prev;
                     proc.prev.next = proc;
                     proc.next.prev = proc;
+                    frees.remove(free);
                     free.setBase(free.getBase() + size);
                     free.setSize(free.getSize() - size);
+                    frees.add(free);
                 }
                 pees.put(id, proc);
                 remainingSize -= size;
@@ -176,36 +179,36 @@ class Memory {
     // smallest avail block
     static void allocateBestFit(int id, int size) {
         if (size <= remainingSize) {
-            frees.sort(sizeComp); // sort array of free blocks by asc size
-            Node free;
-            int bestFit = searchForNode(size);
-            if (bestFit == -1) {
+            Node proc = new Node(id, 0, size);
+            Node free = frees.ceiling(proc);
+            if (free == null) {
                 compaction();
-                free = frees.get(0);
-                Node proc;
+                free = frees.first();
                 if (free.getSize() == size) {
                     free.setPid(id);
-                    proc = frees.remove(0);
+                    proc = free;
+                    frees.remove(free);
                 } else {
                     proc = new Node(id, free.getBase(), size);
                     proc.next = free;
                     proc.prev = free.prev;
                     proc.prev.next = proc;
                     proc.next.prev = proc;
+                    frees.remove(free);
                     free.setBase(free.getBase() + size);
                     free.setSize(free.getSize() - size);
+                    frees.add(free);
                 }
                 pees.put(id, proc);
                 remainingSize -= size;
             } else {
-                free = frees.get(bestFit);
                 if (free.getSize() == size) {  // if perfect fit
                     free.setPid(id);
                     frees.remove(free);
                     pees.put(id, free);
                     remainingSize -= size;
                 } else if (free.getSize() > size) {
-                    Node proc = new Node(id, free.getBase(), size);  //start from base of free
+                    proc.setBase(free.getBase());  //start from base of free
                     if (free.prev != null) { // if free isn't the head, swap
                         proc.next = free;
                         proc.prev = free.prev;
@@ -216,8 +219,10 @@ class Memory {
                         free.prev = proc;
                         storage = proc;
                     }
+                    frees.remove(free);
                     free.setBase(free.getBase() + size);
                     free.setSize(free.getSize() - size);
+                    frees.add(free);
                     pees.put(id, proc);
                     remainingSize -= size;
                 }
@@ -225,19 +230,6 @@ class Memory {
         } else {
             System.out.println("\nProcess PID: " + id + " doesn't fit.  Moving on.\n");
         }
-    }
-
-    static int searchForNode(int size) {  // binary search for best fit algo
-        int left = 0, right = frees.size() -1, mid = 0;
-        while (left < right) {
-            mid = left + (right - left)/2;
-            if (frees.get(mid).getSize() >= size) { //keep cur discard all bigger blocks on right
-                right = mid;
-            } else { //discard cur and all left smaller blocks
-                left = mid + 1;
-            }
-        }
-        return (frees.get(left).getSize() >= size) ? left : -1;
     }
 
     public void executeWorstFit(Scanner instructions) {
@@ -260,11 +252,10 @@ class Memory {
     // largest avail block
     static void allocateWorstFit(int id, int size) {
         if (size <= remainingSize) {
-            frees.sort(sizeComp.reversed()); // sort array of free blocks by dsc size
-            Node free = frees.get(0);
+            Node free = frees.last();
             if (free.getSize() < size) {  // if first free in sorted not big enough, compact
                 compaction();
-                free = frees.get(0);
+                free = frees.first();  // get the compacted free node
             }
             if (free.getSize() == size) {  // if perfect fit
                 free.setPid(id);
@@ -283,8 +274,10 @@ class Memory {
                     free.prev = proc;
                     storage = proc;
                 }
+                frees.remove(free);
                 free.setBase(free.getBase() + size);
                 free.setSize(free.getSize() - size);
+                frees.add(free);
                 pees.put(id, proc);
                 remainingSize -= size;
             }
@@ -325,7 +318,9 @@ class Memory {
     static void checkMergeFrees(Node free) {
         if (free.next != null && free.next.getPid() == -1) {
             int rsize = free.next.size;
+            frees.remove(free);
             free.setSize(free.getSize() + rsize);
+            frees.add(free);
             frees.remove(free.next);
             Node rneigh = free.next.next;
             free.next = rneigh;
@@ -335,7 +330,9 @@ class Memory {
         }
         if (free.prev != null && free.prev.getPid() == -1) {
             Node lneigh = free.prev;
+            frees.remove(lneigh);
             lneigh.setSize(lneigh.getSize() + free.size);
+            frees.add(lneigh);
             frees.remove(free);
             lneigh.next = free.next;
             if (free.next != null) {
@@ -350,7 +347,7 @@ class Memory {
         int space = 0;
         while(cur.next != null) {
             if (cur.getPid() == -1) {
-                if (cur == storage) { // if cur is free and head
+                if (cur == storage) { // if cur is a free block and head node
                     storage = storage.next;
                     cur.next.prev = null;
                 } else {
@@ -386,13 +383,18 @@ public class Lab8 {
         String algo = instructions.nextLine();
         int capacity = Integer.parseInt(instructions.nextLine());
         System.out.println("Max Capacity: " + capacity);
-        Memory mem = new Memory(capacity);
 
         if (algo.equals("1")) {
+            TreeSet<Node> freeTree = new TreeSet<>(new SortByBase());
+            Memory mem = new Memory(capacity, freeTree);
             mem.executeFirstFit(instructions);
         } else if (algo.equals("2")) {
+            TreeSet<Node> freeTree = new TreeSet<>(new SortBySize());
+            Memory mem = new Memory(capacity, freeTree);
             mem.executeBestFit(instructions);
         } else {
+            TreeSet<Node> freeTree = new TreeSet<>(new SortBySize());
+            Memory mem = new Memory(capacity, freeTree);
             mem.executeWorstFit(instructions);
         }
     }
@@ -408,6 +410,5 @@ public class Lab8 {
         } else {
             System.out.println("Invalid number of arguments.");
         }
-
     }
 }
